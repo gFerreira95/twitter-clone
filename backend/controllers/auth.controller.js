@@ -64,13 +64,44 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
     try {
         
-    } catch (error) {
+        const {username, password} = req.body;
+        const user = await User.findOne({username});
+        const isValidPassword = await bcrypt.compare(password, user?.password || '');
         
+        if(!user || !isValidPassword) {
+            return res.status(400).json({message: 'Invalid username or password'});
+        }
+
+        generateTokenAndSetCookie(user._id, res);
+        return res.status(200).json({
+            _id: user._id,
+            fullName: user.fullName,
+            username: user.username,
+            email: user.email,
+        })
+
+    } catch (error) {
+        res.status(500).json({error: "internal server error "})
+        console.log("error in login controller", error.message);
     }
 }
 
 export const logout = async (req, res) => {
-    res.json({
-        data: "you hit the logout endpoint"
-    })
+   try {
+        res.cookie("jwt" , "", {maxAge: 0});
+        return res.status(200).json({message: 'Logged out successfully'});
+   } catch (error) {
+    res.status(500).json({error: "internal server error "})
+    console.log("error in logout controller", error.message);    
+   } 
+}
+
+export const getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        return res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({error: "internal server error "})
+        console.log("error in getMe controller", error.message);        
+    }
 }
