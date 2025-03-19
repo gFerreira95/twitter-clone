@@ -1,6 +1,7 @@
 import express from 'express'
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
+import postRoutes from './routes/post.routes.js'
 import dotenv from 'dotenv'
 import connectDb from './db/connectDb.js';
 import cookieParser from 'cookie-parser';
@@ -20,6 +21,7 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/post', postRoutes);
 
 
 app.listen(port, () => {
