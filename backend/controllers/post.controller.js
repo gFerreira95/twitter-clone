@@ -114,11 +114,13 @@ export const likePost = async (req, res ) => {
 
         if(userLikedPost){
             await Post.updateOne({_id:postId}, {$pull: {likes: userId}});
+            await User.updateOne({_id:userId}, {$pull: {likedPosts: postId}});
             res.status(200).json({message: 'Post unliked successfully!'});
         }
         else {
             await post.likes.push(userId);
             await post.save();
+            await User.updateOne({_id:userId}, {$push: {likedPosts: postId}});
 
             const notification = new Notification({
                 from: userId,
@@ -153,4 +155,57 @@ export const getPosts = async (req, res) => {
         res.status(500).json({message: 'Error getting posts!'});
         console.log("error in getPosts controller", error.message);        
     }
+}
+
+export const getLikedPosts = async (req, res) => {
+    const userId = req.params.id;
+    try {
+        const user = await User.findById(userId);
+        if(!user) return res.status(404).json({message: 'User not found!'});
+        const likedPosts = await Post.find({ _id: { $in: user.likedPosts}})
+        .populate({
+            path: 'user',
+            select: '-password'
+        }).populate({
+            path: 'comments.user',
+            select: '-password'
+        });
+        if( likedPosts.lenght == 0){
+            return res.status(404).json({message: 'No posts found!'});
+        }
+        res.status(200).json(likedPosts);
+    } catch (error) {
+        res.status(500).json({message: 'Error getting liked posts!'});
+        console.log("error in getLikedPosts controller", error.message);        
+    }
+}
+
+export const getFollowingPosts = async (req, res) => {
+    try {
+
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if(!user) return res.status(404).json({message: 'User not found!'});
+        const following = user.following;
+
+        const feedPosts = await Post.find({user: {$in: following}}).sort({createdAt: -1})
+        .populate({
+            path: 'user',
+            select: '-password',
+        })
+        .populate({
+            path: 'comments.user',
+            select: '-password',
+        });
+        res.status(200).json(feedPosts);
+
+    } catch (error) {
+        res.status(500).json({message: 'Error getting following posts!'});
+        console.log("error in getFollowingPosts controller", error.message);        
+    }
+}
+
+export const getUserPosts = async (req, res) => {
+    
 }
